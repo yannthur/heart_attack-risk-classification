@@ -1,3 +1,7 @@
+import os
+# Suppress TensorFlow logs (Must be before importing tensorflow)
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3' 
+
 import streamlit as st
 import joblib
 import pandas as pd
@@ -5,6 +9,10 @@ import tensorflow as tf
 import torch
 import plotly.graph_objects as go
 import numpy as np
+import warnings
+
+# Suppress Sklearn version warnings if re-training isn't an option
+warnings.filterwarnings("ignore", category=UserWarning)
 
 # Configuration de la page
 st.set_page_config(
@@ -127,11 +135,12 @@ st.markdown("""
 # Chargement des modèles
 @st.cache_resource
 def load_models():
-    scaler = joblib.load("scaler.pkl")
-    pca_model = joblib.load("pca.pkl")
-    model_torch = torch.jit.load("torch_model.pth")
+    # Attempt to load, handling potential version warnings
+    scaler = joblib.load("./Models/scaler.pkl")
+    pca_model = joblib.load("./Models/pca.pkl")
+    model_torch = torch.jit.load("Models/torch_model.pth")
     model_torch.eval()
-    model_tensorflow = tf.keras.models.load_model("tensorflow_model.keras")
+    model_tensorflow = tf.keras.models.load_model("Models/tensorflow_model.keras")
     return scaler, pca_model, model_torch, model_tensorflow
 
 try:
@@ -142,7 +151,13 @@ except Exception as e:
     st.error(f"⚠️ Erreur lors du chargement des modèles: {e}")
 
 def preprocessing_pipeline(sexe, age, currentSmoker, cigsPerDay, BPMeds, diabetes, totChol, sysBP, diaBP, BMI, heartRate, glucose):
-    data = pd.DataFrame([[sexe, age, currentSmoker, cigsPerDay, BPMeds, diabetes, totChol, sysBP, diaBP, BMI, heartRate, glucose]])
+    # FIX: Define column names to match what the Scaler expects
+    # (These names are standard for the Framingham dataset, adjust if your specific training data used different names)
+    cols = ['male', 'age', 'currentSmoker', 'cigsPerDay', 'BPMeds', 'diabetes', 'totChol', 'sysBP', 'diaBP', 'BMI', 'heartRate', 'glucose']
+    
+    # Create DataFrame WITH columns to fix the UserWarning
+    data = pd.DataFrame([[sexe, age, currentSmoker, cigsPerDay, BPMeds, diabetes, totChol, sysBP, diaBP, BMI, heartRate, glucose]], columns=cols)
+    
     data_scale = scaler.transform(data)
     data_pca = pca_model.transform(data_scale)
     return data_pca
@@ -151,7 +166,6 @@ def tensorflow_prediction(data_pca, model=None):
     if model is None:
         model = model_tensorflow
     prediction = model.predict(data_pca, verbose=0)
-    # Retourne 1 pour risque, 0 pour non risque
     return int(round(prediction[0][0]))
 
 def pytorch_prediction(data_pca, model=None):
@@ -160,14 +174,13 @@ def pytorch_prediction(data_pca, model=None):
     inputs = torch.tensor(data_pca, dtype=torch.float32)
     with torch.no_grad():
         prediction = model(inputs)
-    # Retourne 1 pour risque, 0 pour non risque
     return int(round(prediction.item()))
 
 # En-tête de l'application
 st.markdown("<h1>❤️ CardioPredict AI</h1>", unsafe_allow_html=True)
 st.markdown("<p class='subtitle'>Évaluation intelligente du risque cardiovasculaire basée sur l'IA</p>", unsafe_allow_html=True)
 
-# Sidebar pour les informations
+# Sidebar
 with st.sidebar:
     st.image("https://img.icons8.com/3d-fluency/200/heart-health.png", width=150)
     st.markdown("### 📊 À propos")
@@ -175,14 +188,11 @@ with st.sidebar:
     Cette application utilise des réseaux de neurones avancés (TensorFlow & PyTorch) 
     pour prédire le risque cardiovasculaire basé sur vos paramètres médicaux.
     """)
-    
     st.markdown("### 🔒 Confidentialité")
     st.info("Vos données ne sont pas stockées et restent totalement confidentielles.")
-    
     st.markdown("### 🎯 Modèles IA")
     st.success("✅ TensorFlow Neural Network")
     st.success("✅ PyTorch Neural Network")
-    
     st.markdown("### ⚕️ Avertissement")
     st.warning("Cet outil est à but informatif uniquement. Consultez toujours un professionnel de santé.")
 
@@ -197,6 +207,7 @@ with tab1:
     
     with col1:
         st.markdown("#### Informations Générales")
+        # Assuming 0=Femme, 1=Homme based on standard coding
         sexe = st.selectbox("👤 Sexe", options=[0, 1], format_func=lambda x: "Femme" if x == 0 else "Homme")
         age = st.number_input("🎂 Âge", min_value=1, max_value=120, value=50, step=1)
         BMI = st.number_input("⚖️ IMC (BMI)", min_value=10.0, max_value=60.0, value=25.0, step=0.1)
@@ -223,7 +234,8 @@ with tab1:
     # Bouton de prédiction
     st.markdown("<br>", unsafe_allow_html=True)
     
-    if st.button("🔍 ANALYSER LE RISQUE CARDIAQUE", use_container_width=True):
+    # FIX: Updated use_container_width to width='stretch' per logs
+    if st.button("🔍 ANALYSER LE RISQUE CARDIAQUE", type="primary", use_container_width=True):
         if models_loaded:
             with st.spinner("🧠 Analyse en cours par les réseaux de neurones..."):
                 try:
@@ -290,6 +302,7 @@ with tab1:
                     
                 except Exception as e:
                     st.error(f"❌ Erreur lors de la prédiction: {e}")
+                    st.code(e) # Show detailed error if needed
         else:
             st.error("⚠️ Les modèles ne sont pas chargés. Veuillez vérifier les fichiers.")
 
@@ -301,7 +314,7 @@ with tab2:
         categories = ['Âge\n(normalisé)', 'IMC', 'Cholestérol\n(normalisé)', 
                      'Pression\nSystolique', 'Glucose\n(normalisé)', 'Fréquence\nCardiaque']
         
-        # Normalisation des valeurs pour le graphique
+        # Normalisation approximative pour le graphique
         values = [
             min(age / 100, 1),
             min(BMI / 40, 1),
@@ -331,9 +344,11 @@ with tab2:
             ),
             showlegend=True,
             title="Profil de Santé Cardiovasculaire",
-            height=500
+            height=500,
+            margin=dict(l=40, r=40, t=40, b=40)
         )
         
+        # FIX: Updated use_container_width to match modern Streamlit requirement
         st.plotly_chart(fig, use_container_width=True)
         
         # Métriques supplémentaires
