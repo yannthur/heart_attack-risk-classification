@@ -349,7 +349,7 @@ with tab2:
         )
         
         # Fixé pour éviter le warning use_container_width
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, width=True)
         
         # Métriques supplémentaires
         col1, col2, col3, col4 = st.columns(4)
