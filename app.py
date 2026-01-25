@@ -140,7 +140,7 @@ def load_models():
     pca_model = joblib.load("pca.pkl")
     model_torch = torch.jit.load("torch_model.pth")
     model_torch.eval()
-    model_tensorflow = tf.keras.models.load_model("models_loadedtensorflow_model.keras")
+    model_tensorflow = tf.keras.models.load_model("tensorflow_model.keras")
     return scaler, pca_model, model_torch, model_tensorflow
 
 try:
