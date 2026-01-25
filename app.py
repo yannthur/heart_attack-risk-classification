@@ -96,7 +96,8 @@ st.markdown("""
         50% { transform: scale(1.05); }
     }
     
-    .stButton > button {
+    /* Style ajusté pour le bouton de formulaire */
+    div.stButton > button {
         width: 100%;
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         color: white;
@@ -109,7 +110,7 @@ st.markdown("""
         transition: all 0.3s ease;
     }
     
-    .stButton > button:hover {
+    div.stButton > button:hover {
         transform: translateY(-2px);
         box-shadow: 0 8px 20px rgba(102, 126, 234, 0.6);
     }
@@ -135,12 +136,11 @@ st.markdown("""
 # Chargement des modèles
 @st.cache_resource
 def load_models():
-    # Attempt to load, handling potential version warnings
-    scaler = joblib.load("scaler.pkl")
-    pca_model = joblib.load("pca.pkl")
-    model_torch = torch.jit.load("torch_model.pth")
+    scaler = joblib.load("./Models/scaler.pkl")
+    pca_model = joblib.load("./Models/pca.pkl")
+    model_torch = torch.jit.load("Models/torch_model.pth")
     model_torch.eval()
-    model_tensorflow = tf.keras.models.load_model("tensorflow_model.keras")
+    model_tensorflow = tf.keras.models.load_model("Models/tensorflow_model.keras")
     return scaler, pca_model, model_torch, model_tensorflow
 
 try:
@@ -151,13 +151,8 @@ except Exception as e:
     st.error(f"⚠️ Erreur lors du chargement des modèles: {e}")
 
 def preprocessing_pipeline(sexe, age, currentSmoker, cigsPerDay, BPMeds, diabetes, totChol, sysBP, diaBP, BMI, heartRate, glucose):
-    # FIX: Define column names to match what the Scaler expects
-    # (These names are standard for the Framingham dataset, adjust if your specific training data used different names)
     cols = ['male', 'age', 'currentSmoker', 'cigsPerDay', 'BPMeds', 'diabetes', 'totChol', 'sysBP', 'diaBP', 'BMI', 'heartRate', 'glucose']
-    
-    # Create DataFrame WITH columns to fix the UserWarning
     data = pd.DataFrame([[sexe, age, currentSmoker, cigsPerDay, BPMeds, diabetes, totChol, sysBP, diaBP, BMI, heartRate, glucose]], columns=cols)
-    
     data_scale = scaler.transform(data)
     data_pca = pca_model.transform(data_scale)
     return data_pca
@@ -203,42 +198,48 @@ with tab1:
     st.markdown("<div class='card'>", unsafe_allow_html=True)
     st.markdown("### 📝 Informations du Patient")
     
-    col1, col2, col3 = st.columns(3)
-    
-    with col1:
-        st.markdown("#### Informations Générales")
-        # Assuming 0=Femme, 1=Homme based on standard coding
-        sexe = st.selectbox("👤 Sexe", options=[0, 1], format_func=lambda x: "Femme" if x == 0 else "Homme")
-        age = st.number_input("🎂 Âge", min_value=1, max_value=120, value=50, step=1)
-        BMI = st.number_input("⚖️ IMC (BMI)", min_value=10.0, max_value=60.0, value=25.0, step=0.1)
-        heartRate = st.number_input("💓 Fréquence Cardiaque (bpm)", min_value=40, max_value=200, value=70, step=1)
-    
-    with col2:
-        st.markdown("#### Habitudes de Vie")
-        currentSmoker = st.selectbox("🚬 Fumeur Actuel", options=[0, 1], format_func=lambda x: "Non" if x == 0 else "Oui")
-        cigsPerDay = st.number_input("📊 Cigarettes/Jour", min_value=0, max_value=100, value=0, step=1, disabled=(currentSmoker == 0))
+    # --- MODIFICATION ICI : AJOUT DU FORMULAIRE (st.form) ---
+    with st.form("patient_data_form"):
+        col1, col2, col3 = st.columns(3)
         
-        st.markdown("#### Conditions Médicales")
-        BPMeds = st.selectbox("💊 Médicaments Tension", options=[0, 1], format_func=lambda x: "Non" if x == 0 else "Oui")
-        diabetes = st.selectbox("🩸 Diabète", options=[0, 1], format_func=lambda x: "Non" if x == 0 else "Oui")
-    
-    with col3:
-        st.markdown("#### Mesures Biologiques")
-        totChol = st.number_input("🧪 Cholestérol Total (mg/dL)", min_value=100, max_value=600, value=200, step=1)
-        sysBP = st.number_input("📈 Pression Systolique (mmHg)", min_value=80, max_value=250, value=120, step=1)
-        diaBP = st.number_input("📉 Pression Diastolique (mmHg)", min_value=40, max_value=150, value=80, step=1)
-        glucose = st.number_input("🍬 Glucose (mg/dL)", min_value=50, max_value=400, value=100, step=1)
-    
-    st.markdown("</div>", unsafe_allow_html=True)
-    
-    # Bouton de prédiction
-    st.markdown("<br>", unsafe_allow_html=True)
-    
-    # FIX: Updated use_container_width to width='stretch' per logs
-    if st.button("🔍 ANALYSER LE RISQUE CARDIAQUE", type="primary", width=True):
+        with col1:
+            st.markdown("#### Informations Générales")
+            sexe = st.selectbox("👤 Sexe", options=[0, 1], format_func=lambda x: "Femme" if x == 0 else "Homme")
+            age = st.number_input("🎂 Âge", min_value=1, max_value=120, value=50, step=1)
+            BMI = st.number_input("⚖️ IMC (BMI)", min_value=10.0, max_value=60.0, value=25.0, step=0.1)
+            heartRate = st.number_input("💓 Fréquence Cardiaque (bpm)", min_value=40, max_value=200, value=70, step=1)
+        
+        with col2:
+            st.markdown("#### Habitudes de Vie")
+            currentSmoker = st.selectbox("🚬 Fumeur Actuel", options=[0, 1], format_func=lambda x: "Non" if x == 0 else "Oui")
+            cigsPerDay = st.number_input("📊 Cigarettes/Jour", min_value=0, max_value=100, value=0, step=1) # Disabled non supporté bien dans form, on laisse activé
+            
+            st.markdown("#### Conditions Médicales")
+            BPMeds = st.selectbox("💊 Médicaments Tension", options=[0, 1], format_func=lambda x: "Non" if x == 0 else "Oui")
+            diabetes = st.selectbox("🩸 Diabète", options=[0, 1], format_func=lambda x: "Non" if x == 0 else "Oui")
+        
+        with col3:
+            st.markdown("#### Mesures Biologiques")
+            totChol = st.number_input("🧪 Cholestérol Total (mg/dL)", min_value=100, max_value=600, value=200, step=1)
+            sysBP = st.number_input("📈 Pression Systolique (mmHg)", min_value=80, max_value=250, value=120, step=1)
+            diaBP = st.number_input("📉 Pression Diastolique (mmHg)", min_value=40, max_value=150, value=80, step=1)
+            glucose = st.number_input("🍬 Glucose (mg/dL)", min_value=50, max_value=400, value=100, step=1)
+        
+        st.markdown("</div>", unsafe_allow_html=True)
+        st.markdown("<br>", unsafe_allow_html=True)
+        
+        # Le bouton doit être un form_submit_button
+        submitted = st.form_submit_button("🔍 ANALYSER LE RISQUE CARDIAQUE", type="primary", use_container_width=True)
+
+    # Logique de prédiction hors du bloc form, déclenchée par "submitted"
+    if submitted:
         if models_loaded:
             with st.spinner("🧠 Analyse en cours par les réseaux de neurones..."):
                 try:
+                    # Correction logique: si non fumeur, cigs = 0 forcés
+                    if currentSmoker == 0:
+                        cigsPerDay = 0
+                        
                     # Prétraitement
                     data_pca = preprocessing_pipeline(
                         sexe, age, currentSmoker, cigsPerDay, BPMeds, 
@@ -302,7 +303,6 @@ with tab1:
                     
                 except Exception as e:
                     st.error(f"❌ Erreur lors de la prédiction: {e}")
-                    st.code(e) # Show detailed error if needed
         else:
             st.error("⚠️ Les modèles ne sont pas chargés. Veuillez vérifier les fichiers.")
 
@@ -348,8 +348,8 @@ with tab2:
             margin=dict(l=40, r=40, t=40, b=40)
         )
         
-        # FIX: Updated use_container_width to match modern Streamlit requirement
-        st.plotly_chart(fig, width=True)
+        # Fixé pour éviter le warning use_container_width
+        st.plotly_chart(fig, use_container_width=True)
         
         # Métriques supplémentaires
         col1, col2, col3, col4 = st.columns(4)
