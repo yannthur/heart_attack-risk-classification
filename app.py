@@ -235,7 +235,7 @@ with tab1:
     st.markdown("<br>", unsafe_allow_html=True)
     
     # FIX: Updated use_container_width to width='stretch' per logs
-    if st.button("🔍 ANALYSER LE RISQUE CARDIAQUE", type="primary", use_container_width=True):
+    if st.button("🔍 ANALYSER LE RISQUE CARDIAQUE", type="primary", width=True):
         if models_loaded:
             with st.spinner("🧠 Analyse en cours par les réseaux de neurones..."):
                 try:
@@ -349,7 +349,7 @@ with tab2:
         )
         
         # FIX: Updated use_container_width to match modern Streamlit requirement
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, width=True)
         
         # Métriques supplémentaires
         col1, col2, col3, col4 = st.columns(4)
