@@ -249,7 +249,3 @@ Passionné par l'intersection entre **intelligence artificielle et santé numér
 - Concevoir et entraîner des modèles de deep learning avec TensorFlow et PyTorch sur des problèmes de classification clinique déséquilibrée
 - Déployer des modèles en production via des interfaces utilisateur accessibles
 ---
-
----
-
-*Développé avec ❤️ pour la santé cardiovasculaire*
