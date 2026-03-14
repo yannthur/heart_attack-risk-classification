@@ -248,10 +248,6 @@ Passionné par l'intersection entre **intelligence artificielle et santé numér
 - Appliquer les bonnes pratiques de preprocessing sur des données médicales sensibles (imputation, normalisation, évitement du data leakage)
 - Concevoir et entraîner des modèles de deep learning avec TensorFlow et PyTorch sur des problèmes de classification clinique déséquilibrée
 - Déployer des modèles en production via des interfaces utilisateur accessibles
-
-[![LinkedIn](https://img.shields.io/badge/LinkedIn-0A66C2?style=flat-square&logo=linkedin&logoColor=white)](https://linkedin.com/in/votre-profil)
-[![GitHub](https://img.shields.io/badge/GitHub-181717?style=flat-square&logo=github&logoColor=white)](https://github.com/votre-username)
-
 ---
 
 ---
